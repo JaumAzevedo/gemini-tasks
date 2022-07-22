@@ -18,12 +18,14 @@ import moment from "moment"
 import 'moment/locale/pt-br'
 
 import Task from '../components/Task'
+import AddTask from './AddTask'
 import { DrawerItemList } from "@react-navigation/drawer"
 
 export default class TaskList extends Component {
     state = {
         showDoneTasks: true,
         visibleTasks: [],
+        showAddTask: false,
         tasks: [{
             id: Math.random(),
             desc: 'Comprar Livro de Moisés',
@@ -68,7 +70,7 @@ export default class TaskList extends Component {
             }
         })
 
-        this.setState({ tasks })
+        this.setState({ tasks }, this.filterTasks())
     }
 
 
@@ -77,6 +79,8 @@ export default class TaskList extends Component {
         const today = moment().locale('pt-br').format('ddd, D [de] MMMM');
         return (
             <View style={styles.container}>
+                <AddTask isVisible={this.state.showAddTask}
+                    onCancel={() => this.setState({showAddTask: false})}/>
                 <ImageBackground source={todayImage}
                     style={styles.background}>
                     <View style={styles.iconBar}>
@@ -94,7 +98,11 @@ export default class TaskList extends Component {
                         keyExtractor={item => `${item.id}`}
                         renderItem={({item}) => <Task {...item} toggleTask={this.toggleTask} />} />
                 </View>
-                
+                <TouchableOpacity style={styles.addButton}
+                    activeOpacity= {0.7}
+                    onPress={() => this.setState({ showAddTask: true })}>
+                    <Icon name="plus" size={20} color={commonStyles.colors.secondary}/>
+                </TouchableOpacity>
             </View>
         )
     }
@@ -133,5 +141,16 @@ const styles = StyleSheet.create({
        marginHorizontal: 20,
        justifyContent: 'flex-end',
        marginTop: Platform.OS === 'ios' ? 30 : 10
+    },
+    addButton: {
+        position: 'absolute',
+        right: 30,
+        bottom: 30,
+        width: 50,
+        height: 50,
+        borderRadius: 25,
+        backgroundColor: commonStyles.colors.today,
+        justifyContent: 'center',
+        alignItems: 'center',
     }
 }) 
