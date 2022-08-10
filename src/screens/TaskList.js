@@ -10,6 +10,8 @@ import {
     Alert
 } from "react-native"
 
+import AsyncStorage from "@react-native-community/async-storage"
+
 import commonStyles from "../commonStyles"
 import todayImage from '../../assets/imgs/today.jpg'
 
@@ -23,22 +25,16 @@ import AddTask from './AddTask'
 import { DrawerItemList } from "@react-navigation/drawer"
 import 'react-native-gesture-handler';
 
+const initialState = {
+    showDoneTasks: true,
+    visibleTasks: [],
+    showAddTask: false,
+    tasks: []
+}
+
 export default class TaskList extends Component {
     state = {
-        showDoneTasks: true,
-        visibleTasks: [],
-        showAddTask: false,
-        tasks: [{
-            id: Math.random(),
-            desc: 'Comprar Livro de Moisés',
-            estimateAt: new Date(),
-            doneAt: new Date(),
-        }, {
-            id: Math.random(),
-            desc: 'Comprar Livro de João',
-            estimateAt: new Date(),
-            doneAt: null,
-        }]
+        ...initialState
     }
 
     if (Platform,OS = 'android') {
@@ -58,8 +54,10 @@ export default class TaskList extends Component {
     
           
 
-    componentDidMount = () => {
-        this.filterTasks()
+    componentDidMount = async () => {
+        const stateString = await AsyncStorage.getItem('tasksState')
+        const state = JSON.parse(stateString) || initialState
+        this.setState(state, this.filterTasks)
     }
 
     toggleFilter = () => {
@@ -75,10 +73,12 @@ export default class TaskList extends Component {
         if(this.state.showDoneTasks) {
             visibleTasks = [...this.state.tasks]
         } else {
-            visibleTasks = this.state.tasks.filter(this.isPending)
+            const pending = task => task.doneAt === null
+            visibleTasks = this.state.tasks.filter(pending)
         }
 
         this.setState({ visibleTasks })
+        AsyncStorage.setItem('tasksState', JSON.stringify(this.state))
     }
 
     toggleTask = taskId => {
@@ -110,6 +110,11 @@ export default class TaskList extends Component {
 
     }
 
+    deleteTask = id => {
+        const tasks = this.state.tasks.filter(task => task.id !== id)
+        this.setState({ tasks }, this.filterTasks)
+    }
+
     render () {
         const today = moment().locale('pt-br').format('ddd, D [de] MMMM');
         return (
@@ -132,7 +137,9 @@ export default class TaskList extends Component {
                 <View style={styles.taskList}>
                     <FlatList data={this.state.visibleTasks} 
                         keyExtractor={item => `${item.id}`}
-                        renderItem={({item}) => <Task {...item} toggleTask={this.toggleTask} />} />
+                        renderItem={({item}) => <Task {...item} 
+                        onToggleTask={this.toggleTask} 
+                        onDelete={this.deleteTask}/>} />
                 </View>
                 <TouchableOpacity style={styles.addButton}
                     activeOpacity= {0.7}
